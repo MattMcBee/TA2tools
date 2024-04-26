@@ -1,0 +1,11 @@
+Package: TA2tools
+Type: Package
+Title: Helper Tools for Processing TA 2.1 JSON Outputs, Visualizing Data, and Calculating Impact
+Version: 0.1.0
+Author: Matthew McBee
+Maintainer: Matthew McBee <matthew.mcbee@smg.com>
+Description: Helper tools for parsing, plotting, and doing impact calculations on TA2.1 data
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
