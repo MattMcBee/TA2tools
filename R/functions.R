@@ -75,7 +75,7 @@ prep_for_sankey <- function(dat,
   if ("ta1_categories" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, ta1_categories][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "ta1_categories",
     )
@@ -85,7 +85,7 @@ prep_for_sankey <- function(dat,
   if ("detail.categoryMain" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, detail.categoryMain][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "detail.categoryMain",
     )
@@ -95,7 +95,7 @@ prep_for_sankey <- function(dat,
   if ("detail.categorySub" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, detail.categorySub][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "detail.categorySub",
     )
@@ -105,7 +105,7 @@ prep_for_sankey <- function(dat,
   if ("raw_entity" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, raw_entity][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "raw_entity",
     )
@@ -428,7 +428,7 @@ calc_impact <- function(data,
     df1 <- data_UID[, lapply(.SD, mean, na.rm = TRUE), by = by_cols, .SDcols = metric]
     df1_n <- data_UID[, .(total_n = .N), by = by_cols]
 
-    df1 <- data.table::merge(df1, df1_n, by = by_cols)
+    df1 <- merge(df1, df1_n, by = by_cols)
 
     # change name of metric var (typically osat)
     data.table::setnames(df1, old = metric, new = paste0(metric, "_all"))
@@ -451,7 +451,7 @@ calc_impact <- function(data,
     # remove duplicated column names that occur if a column is in both by_cols and impact_cols
     df2 <- df2[, .SD, .SDcols = unique(names(df2))]
 
-    linked <- data.table::merge(
+    linked <- merge(
       df1,
       df2,
       by = by_cols
@@ -485,7 +485,7 @@ drop_obs2 <- function(data, drop_levels_dt, metric, by_cols) {
   # here's what we need to do
   # find the UIDs that match
   # drop them
-  UIDs_to_drop <- data.table::merge(data, drop_levels_dt,
+  UIDs_to_drop <- merge(data, drop_levels_dt,
     by =
       names(drop_levels_dt)
   )[, .(UID = unique(UID)), by_cols]
@@ -499,7 +499,7 @@ drop_obs2 <- function(data, drop_levels_dt, metric, by_cols) {
   reduced_n <- UIDs_to_drop[, .(excluded_n = .N), by_cols]
 
 
-  reduced_mean <- data.table::merge(
+  reduced_mean <- merge(
     reduced_mean,
     reduced_n,
     by = by_cols
