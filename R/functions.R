@@ -9,6 +9,7 @@
 # devtools::install_github("davidsjoberg/ggsankey")
 # library(ggsankey)
 
+.datatable.aware <- TRUE
 
 # define negation of %in%
 "%!in%" <- Negate("%in%")
