@@ -6,8 +6,9 @@ Author: Matthew McBee
 Maintainer: Matthew McBee <matthew.mcbee@smg.com>
 Description: Helper tools for parsing, plotting, and doing impact calculations on TA 2.1 JSON outputs
 Encoding: UTF-8
+Depends:
+  data.table
 Imports:
-  data.table,
   tidyr,
   here,
   ggplot2,
