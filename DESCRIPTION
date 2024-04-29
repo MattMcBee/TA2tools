@@ -1,11 +1,21 @@
 Package: TA2tools
 Type: Package
-Title: Helper Tools for Processing TA 2.1 JSON Outputs, Visualizing Data, and Calculating Impact
+Title: Helper Tools for Processing TA 2.1 Outputs
 Version: 0.1.0
 Author: Matthew McBee
 Maintainer: Matthew McBee <matthew.mcbee@smg.com>
-Description: Helper tools for parsing, plotting, and doing impact calculations on TA2.1 data
+Description: Helper tools for parsing, plotting, and doing impact calculations on TA 2.1 JSON outputs
 Encoding: UTF-8
+Imports:
+  data.table,
+  tidyr,
+  here,
+  ggplot2,
+  ggsankey,
+  jsonlite,
+  stringr,
+  dplyr
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
+Remotes: davidsjoberg/ggsankey
