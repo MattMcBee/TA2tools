@@ -347,6 +347,8 @@ read_ta2_json <- function(path_to_file) {
 
   ta2_long <- data.table::data.table(ta2_long)
 
+  browser()
+
   # clean up the entities - ensure they are no longer length-1 lists and do not contain NULL
   ta2_long[, raw_entity := as.character(raw_entity)]
   ta2_long[, raw_entity := stringr::str_replace_all(raw_entity, "NULL", "")]
