@@ -411,6 +411,7 @@ calc_impact <- function(data,
                         method = "tobias",
                         sort_by = "abs_impact",
                         sort_order = -1) {
+
   # make copy of data to avoid modification
   data <- data.table::copy(data)
 
@@ -435,7 +436,7 @@ calc_impact <- function(data,
 
     # df2 will include mean metric value when target case is omitted
     # this will be a data table with varying number of columns
-    var_levels_list <- data.table::split(unique(data[, ..impact_cols]), by = impact_cols)
+    var_levels_list <- split(unique(data[, ..impact_cols]), by = impact_cols)
 
     # each list element will contain a dataframe
     # the underlying function is using an anti-join
