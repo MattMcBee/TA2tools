@@ -425,7 +425,7 @@ calc_impact <- function(data,
     data_UID <- data[, first(.SD), UID]
 
     # df1 is the full data set (optionally by by_cols)
-    df1 <- data_UID[, lapply(.SD, mean, na.rm = TRUE), by = by_cols, .SDcols = metric]
+    df1 <- data_UID[, lapply(.SD, base::mean, na.rm = TRUE), by = by_cols, .SDcols = metric]
     df1_n <- data_UID[, .(total_n = .N), by = by_cols]
 
     df1 <- merge(df1, df1_n, by = by_cols)
