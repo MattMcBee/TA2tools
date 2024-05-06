@@ -1,14 +1,4 @@
-# library(data.table)
-# library(tidyr)
-# library(magrittr)
-# library(here)
-# library(ggplot2)
-# library(jsonlite)
-# library(stringr)
-# library(dplyr)
-# devtools::install_github("davidsjoberg/ggsankey")
-# library(ggsankey)
-
+.datatable.aware <- TRUE
 
 # define negation of %in%
 "%!in%" <- Negate("%in%")
@@ -74,7 +64,7 @@ prep_for_sankey <- function(dat,
   if ("ta1_categories" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, ta1_categories][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "ta1_categories",
     )
@@ -84,7 +74,7 @@ prep_for_sankey <- function(dat,
   if ("detail.categoryMain" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, detail.categoryMain][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "detail.categoryMain",
     )
@@ -94,7 +84,7 @@ prep_for_sankey <- function(dat,
   if ("detail.categorySub" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, detail.categorySub][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "detail.categorySub",
     )
@@ -104,7 +94,7 @@ prep_for_sankey <- function(dat,
   if ("raw_entity" %in% sankey_vars & !is.null(n_threshold)) {
     ta_cat_table <- dat[, .N, raw_entity][N > n_threshold, ]
 
-    reduced_dat <- data.table::merge(reduced_dat,
+    reduced_dat <- merge(reduced_dat,
       ta_cat_table,
       by = "raw_entity",
     )
@@ -286,12 +276,11 @@ make_sankey <- function(dat,
 
 
 
-#' Process list elements in imported JSON
+#' A helper function for processing list elements in imported JSON
 #'
 #' @param x a list of elements that should be converted to lists
 #'
 #' @return list of lists
-#' @export
 #'
 fixlist <- function(x) {
   x <- lapply(x, as.list)
@@ -364,15 +353,19 @@ read_ta2_json <- function(path_to_file) {
 #' @return a tibble
 #' @export
 #'
-calc_meta_impact <- function(data) {
+calc_meta_impact <- function(data, prefix = "excluded") {
   data <- data.table::data.table(data)
   data <- data.table::copy(data)
 
+  # drop any sentiment levels that are floats
+  data <- data[detail.sentiment %in% c(-1, 0, 1), ]
+
+  # make sentiment a factor
   data[, detail.sentiment := factor(detail.sentiment, levels = c(-1, 0, 1), labels = c("negative", "neutral", "positive"))]
 
   data_wide <- tidyr::pivot_wider(
     data = data, names_from = "detail.sentiment", names_prefix = "sentiment_",
-    values_from = c("excluded_n", "osat_excluded", "impact")
+    values_from = c(paste0(prefix, "_n"), paste0("osat_", prefix), "impact")
   )
 
   data_wide <- data.table::data.table(data_wide)
@@ -390,28 +383,38 @@ calc_meta_impact <- function(data) {
 
 
 
-#' Calculate impact
+#' Calculate impact or severity
 #'
-#' @param data placeholder
-#' @param metric placeholder
-#' @param impact_cols placeholder
-#' @param by_cols placeholder
-#' @param method placeholder
-#' @param sort_by placeholder
-#' @param sort_order placeholder
+#' @param dat a data frame containing the data
+#' @param metric string; the survey variable on which to calculate impact, defaults to "osat"
+#' @param impact_cols vector of strings defining column names; the TA2 variables on which to calculate impact. Impact is
+#'   calculated for every unique combination of these variables found in the data.
+#' @param by_cols vector of strings defining column names; impact is calculated separately within these by groups.
+#'   Could be used to calculate separate impact at store level. Defaults to NA for no by group.
+#' @param method string: one of "impact" or "severity"; defaults to "impact"
+#' @param sort_by columnn to sort the results by, defaults to "abs_impact" - the absolute value of impact which
+#'   is internally calculated but dropped before output
+#' @param sort_order numeric, -1 sorts in descending order, 1 sorts in ascending order. defaults to -1
 #'
 #' @return a tibble
 #' @export
 
-calc_impact <- function(data,
-                        metric,
+calc_impact <- function(dat,
+                        metric = "osat",
                         impact_cols,
                         by_cols = NA,
-                        method = "tobias",
+                        method = "impact",
                         sort_by = "abs_impact",
                         sort_order = -1) {
+  dat <- data.table::data.table(dat)
+
   # make copy of data to avoid modification
-  data <- data.table::copy(data)
+  dat <- data.table::copy(dat)
+
+  # check that impact_col is numeric
+  if (class(data[[metric]]) != "numeric") {
+    stop("The data in column ", smetric, " must be numeric")
+  }
 
   # assign a fake column for aggregation if aggregation_var is NULL
   if (is.na(by_cols)) {
@@ -419,27 +422,67 @@ calc_impact <- function(data,
     data[, dummy := 1]
   }
 
-  if (method == "tobias") {
+  if (method == "severity") {
     # get one row per UID
-    data_UID <- data[, first(.SD), UID]
+    dat_UID <- dat[, first(.SD), UID]
 
-    # df1 is the full data set (optionally by by_cols)
-    df1 <- data_UID[, lapply(.SD, mean, na.rm = TRUE), by = by_cols, .SDcols = metric]
-    df1_n <- data_UID[, .(total_n = .N), by = by_cols]
+    # df1 is the full dat set (optionally by by_cols)
+    df1 <- dat_UID[, lapply(.SD, base::mean, na.rm = TRUE), by = by_cols, .SDcols = metric]
+    df1_n <- dat_UID[, .(total_n = .N), by = by_cols]
 
-    df1 <- data.table::merge(df1, df1_n, by = by_cols)
+    df1 <- merge(df1, df1_n, by = by_cols)
+
+    # change name of metric var (typically osat)
+    data.table::setnames(df1, old = metric, new = paste0(metric, "_all"))
+
+    # df2 will include mean metric value when target case is included
+    # this will be a dat table with varying number of columns
+    var_levels_list <- split(unique(dat[, ..impact_cols]), by = impact_cols)
+
+    # each list element will contain a dataframe
+    # the underlying function is using an anti-join
+    df2_list <- lapply(
+      X = var_levels_list, FUN = subset_obs,
+      dat = dat, metric = metric, by_cols = by_cols
+    )
+
+    df2 <- data.table::data.table(
+      data.table::rbindlist(df2_list)
+    )
+
+    # remove duplicated column names that occur if a column is in both by_cols and impact_cols
+    df2 <- df2[, .SD, .SDcols = unique(names(df2))]
+
+    linked <- merge(
+      df1,
+      df2,
+      by = by_cols
+    )
+
+    linked[["impact"]] <- linked[[paste0(metric, "_subset")]] - linked[[paste0(metric, "_all")]]
+  }
+
+  if (method == "impact") {
+    # get one row per UID
+    dat_UID <- dat[, first(.SD), UID]
+
+    # df1 is the full dat set (optionally by by_cols)
+    df1 <- dat_UID[, lapply(.SD, base::mean, na.rm = TRUE), by = by_cols, .SDcols = metric]
+    df1_n <- dat_UID[, .(total_n = .N), by = by_cols]
+
+    df1 <- merge(df1, df1_n, by = by_cols)
 
     # change name of metric var (typically osat)
     data.table::setnames(df1, old = metric, new = paste0(metric, "_all"))
 
     # df2 will include mean metric value when target case is omitted
     # this will be a data table with varying number of columns
-    var_levels_list <- data.table::split(unique(data[, ..impact_cols]), by = impact_cols)
+    var_levels_list <- split(unique(dat[, ..impact_cols]), by = impact_cols)
 
     # each list element will contain a dataframe
     # the underlying function is using an anti-join
     df2_list <- lapply(
-      X = var_levels_list, FUN = drop_obs2,
+      X = var_levels_list, FUN = drop_obs,
       data = data, metric = metric, by_cols = by_cols
     )
 
@@ -450,7 +493,7 @@ calc_impact <- function(data,
     # remove duplicated column names that occur if a column is in both by_cols and impact_cols
     df2 <- df2[, .SD, .SDcols = unique(names(df2))]
 
-    linked <- data.table::merge(
+    linked <- merge(
       df1,
       df2,
       by = by_cols
@@ -459,7 +502,6 @@ calc_impact <- function(data,
     linked[["impact"]] <- linked[[paste0(metric, "_all")]] - linked[[paste0(metric, "_excluded")]]
   }
 
-  # linked[, impact := osat_all - osat_excluded]
   suppressWarnings(
     linked[, abs_impact := abs(impact)]
   )
@@ -477,16 +519,21 @@ calc_impact <- function(data,
   return(tibble::as_tibble(linked))
 }
 
-drop_obs2 <- function(data, drop_levels_dt, metric, by_cols) {
-  # do an anti-join to get the data where the drop_levels are not found
-  # reduced_data = data.table(dplyr::anti_join(data, drop_levels_dt, by=names(drop_levels_dt)))
 
-  # here's what we need to do
+#' Helper function used to implement method=Tobias in impact calculation
+#'
+#' @param data a data.table
+#' @param drop_levels_dt a data.table of levels to drop for the calculation
+#' @param metric the target variable
+#' @param by_cols by groups
+#'
+#' @return a data.table
+#'
+drop_obs <- function(data, drop_levels_dt, metric, by_cols) {
   # find the UIDs that match
   # drop them
-  UIDs_to_drop <- data.table::merge(data, drop_levels_dt,
-    by =
-      names(drop_levels_dt)
+  UIDs_to_drop <- merge(data, drop_levels_dt,
+    by = names(drop_levels_dt)
   )[, .(UID = unique(UID)), by_cols]
 
   # get reduced data - this has one row per UID
@@ -498,7 +545,7 @@ drop_obs2 <- function(data, drop_levels_dt, metric, by_cols) {
   reduced_n <- UIDs_to_drop[, .(excluded_n = .N), by_cols]
 
 
-  reduced_mean <- data.table::merge(
+  reduced_mean <- merge(
     reduced_mean,
     reduced_n,
     by = by_cols
@@ -510,4 +557,37 @@ drop_obs2 <- function(data, drop_levels_dt, metric, by_cols) {
   data.table::setnames(reduced_mean, old = metric, new = paste0(metric, "_excluded"))
 
   return(reduced_mean)
+}
+
+
+
+subset_obs <- function(data, subset_levels_dt, metric, by_cols) {
+  # here's what we need to do
+  # find the UIDs that match
+  # drop them
+  UIDs_to_keep <- merge(data, subset_levels_dt,
+    by = names(subset_levels_dt)
+  )[, .(UID = unique(UID)), by_cols]
+
+  # get reduced data - this has one row per UID
+  subset_data <- data[UID %in% UIDs_to_keep$UID][, first(.SD), UID]
+
+  subset_mean <- subset_data[, lapply(.SD, mean, na.rm = T), .SDcols = metric, by = by_cols]
+
+
+  subset_n <- UIDs_to_keep[, .(subset_n = .N), by_cols]
+
+
+  subset_mean <- merge(
+    subset_mean,
+    subset_n,
+    by = by_cols
+  )
+
+
+  subset_mean <- cbind(subset_mean, subset_levels_dt)
+
+  data.table::setnames(subset_mean, old = metric, new = paste0(metric, "_subset"))
+
+  return(subset_mean)
 }

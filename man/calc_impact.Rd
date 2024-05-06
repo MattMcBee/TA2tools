@@ -2,36 +2,39 @@
 % Please edit documentation in R/functions.R
 \name{calc_impact}
 \alias{calc_impact}
-\title{Calculate impact}
+\title{Calculate impact or severity}
 \usage{
 calc_impact(
-  data,
-  metric,
+  dat,
+  metric = "osat",
   impact_cols,
   by_cols = NA,
-  method = "tobias",
+  method = "impact",
   sort_by = "abs_impact",
   sort_order = -1
 )
 }
 \arguments{
-\item{data}{placeholder}
+\item{dat}{a data frame containing the data}
 
-\item{metric}{placeholder}
+\item{metric}{string; the survey variable on which to calculate impact, defaults to "osat"}
 
-\item{impact_cols}{placeholder}
+\item{impact_cols}{vector of strings defining column names; the TA2 variables on which to calculate impact. Impact is
+calculated for every unique combination of these variables found in the data.}
 
-\item{by_cols}{placeholder}
+\item{by_cols}{vector of strings defining column names; impact is calculated separately within these by groups.
+Could be used to calculate separate impact at store level. Defaults to NA for no by group.}
 
-\item{method}{placeholder}
+\item{method}{string: one of "impact" or "severity"; defaults to "impact"}
 
-\item{sort_by}{placeholder}
+\item{sort_by}{columnn to sort the results by, defaults to "abs_impact" - the absolute value of impact which
+is internally calculated but dropped before output}
 
-\item{sort_order}{placeholder}
+\item{sort_order}{numeric, -1 sorts in descending order, 1 sorts in ascending order. defaults to -1}
 }
 \value{
 a tibble
 }
 \description{
-Calculate impact
+Calculate impact or severity
 }

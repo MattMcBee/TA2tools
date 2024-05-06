@@ -19,5 +19,5 @@ list of lists
 \description{
 process list elements in imported JSON
 
-Process list elements in imported JSON
+A helper function for processing list elements in imported JSON
 }

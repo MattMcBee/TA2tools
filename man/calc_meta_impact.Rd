@@ -4,7 +4,7 @@
 \alias{calc_meta_impact}
 \title{Calculates "meta impact" - the difference in impact for positive vs negative sentiment}
 \usage{
-calc_meta_impact(data)
+calc_meta_impact(data, prefix = "excluded")
 }
 \arguments{
 \item{data}{a data.table containing impact}
